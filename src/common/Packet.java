@@ -71,7 +71,7 @@ public void setSequenceNumber(int sequenceNumber) {
     this.sequenceNumber = sequenceNumber;
 }
 public byte[] toBytes() {
- ByteBuffer buffer = ByteBuffer.allocate(16 + data.length);
+ ByteBuffer buffer = ByteBuffer.allocate(PacketConstants.HEADER_SIZE + data.length);
     buffer.putInt(sequenceNumber);
     buffer.putInt(ackNumber);
     buffer.put(type);
@@ -82,7 +82,7 @@ public byte[] toBytes() {
     return buffer.array();
 }
 public static Packet fromBytes(byte[] bytes) {
-     if (bytes.length < 16) {
+     if (bytes.length < PacketConstants.HEADER_SIZE) {
         throw new IllegalArgumentException("Packet is too short");
     }
 
@@ -93,11 +93,11 @@ public static Packet fromBytes(byte[] bytes) {
     byte type = buffer.get();
     byte flags = buffer.get();
     short dataLength = buffer.getShort();
-    if (dataLength < 0 || dataLength > 1024) {
+    if (dataLength < 0 || dataLength > PacketConstants.MAX_PAYLOAD_SIZE) {
     throw new IllegalArgumentException("Invalid payload length");
 }
 
-if (16 + dataLength != bytes.length) {
+if (PacketConstants.HEADER_SIZE + dataLength != bytes.length) {
     throw new IllegalArgumentException("Packet size does not match payload length");
 }
     int checksum = buffer.getInt();
