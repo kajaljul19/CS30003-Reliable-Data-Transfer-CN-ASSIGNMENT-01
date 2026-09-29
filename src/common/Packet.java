@@ -82,6 +82,10 @@ public byte[] toBytes() {
     return buffer.array();
 }
 public static Packet fromBytes(byte[] bytes) {
+     if (bytes.length < 16) {
+        throw new IllegalArgumentException("Packet is too short");
+    }
+
     ByteBuffer buffer = ByteBuffer.wrap(bytes);
 
     int sequenceNumber = buffer.getInt();
@@ -89,6 +93,13 @@ public static Packet fromBytes(byte[] bytes) {
     byte type = buffer.get();
     byte flags = buffer.get();
     short dataLength = buffer.getShort();
+    if (dataLength < 0 || dataLength > 1024) {
+    throw new IllegalArgumentException("Invalid payload length");
+}
+
+if (16 + dataLength != bytes.length) {
+    throw new IllegalArgumentException("Packet size does not match payload length");
+}
     int checksum = buffer.getInt();
 
     byte[] data = new byte[dataLength];
