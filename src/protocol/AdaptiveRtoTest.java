@@ -34,7 +34,22 @@ public class AdaptiveRtoTest {
                 "Retransmitted packet RTT sample is ignored");
         check(rto.getRtoMillis() == 600,
                 "RTO remains unchanged after ignored sample");
+       
+                // Test: RTO updates correctly for a subsequent RTT sample
+AdaptiveRto rto2 = new AdaptiveRto();
 
+rto2.recordRttSample(200, false);
+rto2.recordRttSample(400, false);
+
+check(rto2.getSmoothedRtt() == 225.0,
+        "Subsequent RTT sample updates SRTT correctly");
+
+check(rto2.getRttVariation() == 125.0,
+        "Subsequent RTT sample updates RTTVAR correctly");
+
+check(rto2.getRtoMillis() == 725,
+        "RTO updates correctly after second RTT sample");
+        
         System.out.println("Adaptive RTO tests completed.");
     }
 }
