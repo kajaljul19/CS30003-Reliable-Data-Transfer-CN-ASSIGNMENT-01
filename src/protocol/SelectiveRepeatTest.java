@@ -204,6 +204,56 @@ try {
 
         check(sr10.getTimedOutPackets(2000, 100).length == 0,
                 "Acknowledged packet is not reported as timed out");
+             // Test: Outstanding packets time out independently.
+        SelectiveRepeat sr11 = new SelectiveRepeat(4);
+
+        sr11.recordSend(0, 1000);
+        sr11.advanceNextSequenceNumber();
+
+        sr11.recordSend(1, 1050);
+        sr11.advanceNextSequenceNumber();
+
+        // At time 1100, only packet 0 has reached its 100 ms timeout.
+        int[] timedOutFirst = sr11.getTimedOutPackets(1100, 100);
+
+        check(timedOutFirst.length == 1 && timedOutFirst[0] == 0,
+                "Only the first expired packet is timed out");
+
+        // At time 1150, both packets have reached their timeout.
+        int[] timedOutBoth = sr11.getTimedOutPackets(1150, 100);
+
+        check(timedOutBoth.length == 2
+                        && timedOutBoth[0] == 0
+                        && timedOutBoth[1] == 1,
+                "Each outstanding packet times out independently");
+
+                 // Test: A retransmitted packet can time out again.
+        SelectiveRepeat sr12 = new SelectiveRepeat(2);
+
+        sr12.recordSend(0, 1000);
+        sr12.advanceNextSequenceNumber();
+
+        // The original transmission times out at 1100.
+        check(sr12.getTimedOutPackets(1100, 100)[0] == 0,
+                "Original transmission times out");
+
+        // Record the retransmission and its new send time.
+        sr12.recordRetransmission(0);
+        sr12.recordRetransmissionSend(0, 1200);
+
+        check(sr12.getRetransmissionCount(0) == 1,
+                "Retransmission count remains correct");
+
+        check(sr12.getSentTime(0) == 1200,
+                "Retransmission timestamp is recorded");
+
+        check(sr12.getTimedOutPackets(1299, 100).length == 0,
+                "Retransmitted packet does not time out too early");
+
+        int[] timedOutAgain = sr12.getTimedOutPackets(1300, 100);
+
+        check(timedOutAgain.length == 1 && timedOutAgain[0] == 0,
+                "Retransmitted packet can time out again");
 
       System.out.println("Initial tests completed.");
     }

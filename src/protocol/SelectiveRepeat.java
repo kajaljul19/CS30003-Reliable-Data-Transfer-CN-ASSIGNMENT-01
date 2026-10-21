@@ -121,6 +121,23 @@ public class SelectiveRepeat {
     sentTime[index] = -1L;
 }
 
+    public void recordRetransmissionSend(int sequenceNumber, long timestamp) {
+        if (sequenceNumber < base || sequenceNumber >= nextSequenceNumber) {
+            throw new IllegalArgumentException(
+                    "Sequence number is not outstanding");
+        }
+
+        int index = sequenceNumber % windowSize;
+
+        if (acknowledged[index]) {
+            throw new IllegalStateException(
+                    "Cannot retransmit an acknowledged packet");
+        }
+
+        sentTime[index] = timestamp;
+    }
+
+
 public int getRetransmissionCount(int sequenceNumber) {
     if (sequenceNumber < 0 ||
         sequenceNumber >= nextSequenceNumber) {
