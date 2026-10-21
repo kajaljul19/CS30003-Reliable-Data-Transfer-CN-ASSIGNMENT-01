@@ -109,7 +109,82 @@ check(!sr5.isAcknowledged(2),
         "New packet starts unacknowledged after slot reuse");
 check(sr5.getSentTime(2) == 1200,
         "New packet has its own send timestamp");
-        
+
+        // Test: Reject a sequence number that was never sent.
+SelectiveRepeat sr6 = new SelectiveRepeat(2);
+
+try {
+    sr6.getSentTime(0);
+    throw new AssertionError(
+        "Unsent sequence number was accepted"
+    );
+} catch (IllegalArgumentException e) {
+    check(true, "Unsent sequence number is rejected");
+}
+
+// Test: Reject a negative sequence number.
+try {
+    sr6.getRetransmissionCount(-1);
+    throw new AssertionError(
+        "Negative sequence number was accepted"
+    );
+} catch (IllegalArgumentException e) {
+    check(true, "Negative sequence number is rejected");
+}
+     // Test: A delayed ACK for an old packet must be ignored.
+SelectiveRepeat sr7 = new SelectiveRepeat(2);
+
+sr7.recordSend(0, 1000);
+sr7.advanceNextSequenceNumber();
+
+sr7.recordSend(1, 1100);
+sr7.advanceNextSequenceNumber();
+
+sr7.recordAcknowledgement(0);
+sr7.recordAcknowledgement(1);
+
+// Slot 0 can now be reused by packet 2.
+sr7.recordSend(2, 1200);
+sr7.advanceNextSequenceNumber();
+
+// Simulate a delayed duplicate ACK for packet 0.
+sr7.recordAcknowledgement(0);
+
+check(!sr7.isAcknowledged(2),
+        "Delayed ACK for packet 0 does not acknowledge packet 2");
+check(sr7.getSentTime(2) == 1200,
+        "Delayed ACK does not change packet 2 timestamp");
+
+        // Test: Reject a packet sent out of sequence.
+SelectiveRepeat sr8 = new SelectiveRepeat(2);
+
+try {
+    sr8.recordSend(1, 1000);
+    throw new AssertionError(
+        "Out-of-sequence packet was accepted"
+    );
+} catch (IllegalArgumentException e) {
+    check(true, "Out-of-sequence packet is rejected");
+}
+
+// Test: Reject a new packet when the window is full.
+SelectiveRepeat sr9 = new SelectiveRepeat(2);
+
+sr9.recordSend(0, 1000);
+sr9.advanceNextSequenceNumber();
+
+sr9.recordSend(1, 1100);
+sr9.advanceNextSequenceNumber();
+
+try {
+    sr9.recordSend(2, 1200);
+    throw new AssertionError(
+        "Packet was accepted when the window was full"
+    );
+} catch (IllegalStateException e) {
+    check(true, "New packet is rejected when window is full");
+}
+
         System.out.println("Initial tests completed.");
     }
 }

@@ -48,11 +48,24 @@ public class SelectiveRepeat {
     }
 
     public void recordSend(int sequenceNumber, long timestamp) {
-        int index = sequenceNumber % windowSize;
-
-        sentTime[index] = timestamp;
-        acknowledged[index] = false;
+    if (sequenceNumber != nextSequenceNumber) {
+        throw new IllegalArgumentException(
+            "Packets must be sent in sequence order"
+        );
     }
+
+    if (!canSend()) {
+        throw new IllegalStateException(
+            "Sending window is full"
+        );
+    }
+
+    int index = sequenceNumber % windowSize;
+
+    sentTime[index] = timestamp;
+    acknowledged[index] = false;
+    retransmissionCount[index] = 0;
+}
 
     public void recordAcknowledgement(int sequenceNumber) {
         if (sequenceNumber < base ||
@@ -85,21 +98,69 @@ public class SelectiveRepeat {
 }
 
     public long getSentTime(int sequenceNumber) {
-        return sentTime[sequenceNumber % windowSize];
+    if (sequenceNumber < 0 ||
+        sequenceNumber >= nextSequenceNumber) {
+        throw new IllegalArgumentException(
+            "Invalid sequence number"
+        );
     }
+
+    return sentTime[sequenceNumber % windowSize];
+}
 
     public void recordRetransmission(int sequenceNumber) {
-        retransmissionCount[sequenceNumber % windowSize]++;
-        sentTime[sequenceNumber % windowSize] = -1L;
+    if (sequenceNumber < base ||
+        sequenceNumber >= nextSequenceNumber) {
+        throw new IllegalArgumentException(
+            "Sequence number is not outstanding"
+        );
     }
 
-    public int getRetransmissionCount(int sequenceNumber) {
-        return retransmissionCount[sequenceNumber % windowSize];
+    int index = sequenceNumber % windowSize;
+    retransmissionCount[index]++;
+    sentTime[index] = -1L;
+}
+
+public int getRetransmissionCount(int sequenceNumber) {
+    if (sequenceNumber < 0 ||
+        sequenceNumber >= nextSequenceNumber) {
+        throw new IllegalArgumentException(
+            "Invalid sequence number"
+        );
     }
+
+    return retransmissionCount[sequenceNumber % windowSize];
+}
 
     public void advanceNextSequenceNumber() {
         if (canSend()) {
             nextSequenceNumber++;
         }
     }
+    public int[] getTimedOutPackets(long currentTime, long rtoMillis) {
+    java.util.ArrayList<Integer> timedOut =
+        new java.util.ArrayList<>();
+
+    for (int sequenceNumber = base;
+         sequenceNumber < nextSequenceNumber;
+         sequenceNumber++) {
+
+        int index = sequenceNumber % windowSize;
+
+        if (!acknowledged[index] &&
+            sentTime[index] >= 0 &&
+            currentTime - sentTime[index] >= rtoMillis) {
+
+            timedOut.add(sequenceNumber);
+        }
+    }
+
+    int[] result = new int[timedOut.size()];
+
+    for (int i = 0; i < timedOut.size(); i++) {
+        result[i] = timedOut.get(i);
+    }
+
+    return result;
+}
 }

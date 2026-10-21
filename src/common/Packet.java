@@ -71,15 +71,30 @@ public void setSequenceNumber(int sequenceNumber) {
     this.sequenceNumber = sequenceNumber;
 }
 public byte[] toBytes() {
- ByteBuffer buffer = ByteBuffer.allocate(PacketConstants.HEADER_SIZE + data.length);
+    ByteBuffer buffer = ByteBuffer.allocate(
+        PacketConstants.HEADER_SIZE + data.length
+    );
+
     buffer.putInt(sequenceNumber);
     buffer.putInt(ackNumber);
     buffer.put(type);
     buffer.put(flags);
     buffer.putShort(dataLength);
-    buffer.putInt(checksum);
+
+    // Leave space for the checksum temporarily.
+    buffer.putInt(0);
+
     buffer.put(data);
-    return buffer.array();
+
+    byte[] packetBytes = buffer.array();
+
+    // Calculate CRC-32, excluding the checksum field.
+    checksum = Checksum.calculatePacketChecksum(packetBytes);
+
+    // Insert the calculated checksum at byte offset 12.
+    ByteBuffer.wrap(packetBytes).putInt(12, checksum);
+
+    return packetBytes;
 }
 public static Packet fromBytes(byte[] bytes) {
      if (bytes.length < PacketConstants.HEADER_SIZE) {
@@ -101,6 +116,13 @@ if (PacketConstants.HEADER_SIZE + dataLength != bytes.length) {
     throw new IllegalArgumentException("Packet size does not match payload length");
 }
     int checksum = buffer.getInt();
+
+    int calculatedChecksum =
+    Checksum.calculatePacketChecksum(bytes);
+
+if (checksum != calculatedChecksum) {
+    throw new IllegalArgumentException("Packet checksum mismatch");
+}
 
     byte[] data = new byte[dataLength];
     buffer.get(data);
