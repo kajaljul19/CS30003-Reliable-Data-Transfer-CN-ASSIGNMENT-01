@@ -254,6 +254,34 @@ try {
 
         check(timedOutAgain.length == 1 && timedOutAgain[0] == 0,
                 "Retransmitted packet can time out again");
+        // Test: Selective Repeat uses the adaptive RTO value.
+        SelectiveRepeat sr13 = new SelectiveRepeat(2);
+        AdaptiveRto adaptiveRto = new AdaptiveRto();
+
+        sr13.recordSend(0, 1000);
+        sr13.advanceNextSequenceNumber();
+
+        check(adaptiveRto.getRtoMillis() == 1000,
+                "Adaptive RTO starts at 1000 ms");
+
+        check(sr13.getTimedOutPackets(
+                        1500, adaptiveRto.getRtoMillis()).length == 0,
+                "Packet does not time out before adaptive RTO");
+
+        adaptiveRto.recordRttSample(50, false);
+
+        check(adaptiveRto.getRtoMillis() == 150,
+                "Adaptive RTO updates from RTT sample");
+
+        check(sr13.getTimedOutPackets(
+                        1149, adaptiveRto.getRtoMillis()).length == 0,
+                "Packet does not time out before updated RTO");
+
+        int[] adaptiveTimeout = sr13.getTimedOutPackets(
+                1150, adaptiveRto.getRtoMillis());
+
+        check(adaptiveTimeout.length == 1 && adaptiveTimeout[0] == 0,
+                "Selective Repeat uses the updated adaptive RTO");
 
       System.out.println("Initial tests completed.");
     }
