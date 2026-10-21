@@ -97,7 +97,7 @@ public byte[] toBytes() {
     return packetBytes;
 }
 public static Packet fromBytes(byte[] bytes) {
-     if (bytes.length < PacketConstants.HEADER_SIZE) {
+    if (bytes == null || bytes.length < PacketConstants.HEADER_SIZE) {
         throw new IllegalArgumentException("Packet is too short");
     }
 

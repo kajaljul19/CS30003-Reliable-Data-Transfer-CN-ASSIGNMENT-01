@@ -1,8 +1,6 @@
 
 package common;
 
-import java.util.Arrays;
-
 public class PacketChecksumTest {
     public static void main(String[] args) {
         byte[] packet = new byte[20];
