@@ -184,7 +184,27 @@ try {
 } catch (IllegalStateException e) {
     check(true, "New packet is rejected when window is full");
 }
+  
+        // Test: Packets are detected only after their timeout expires.
+        SelectiveRepeat sr10 = new SelectiveRepeat(4);
 
-        System.out.println("Initial tests completed.");
+        sr10.recordSend(0, 1000);
+        sr10.advanceNextSequenceNumber();
+
+        check(sr10.getTimedOutPackets(1099, 100) .length == 0,
+                "Packet is not timed out before RTO expires");
+
+        int[] timedOut = sr10.getTimedOutPackets(1100, 100);
+
+        check(timedOut.length == 1 && timedOut[0] == 0,
+                "Packet is timed out when RTO expires");
+
+        // Test: Acknowledged packets must not time out.
+        sr10.recordAcknowledgement(0);
+
+        check(sr10.getTimedOutPackets(2000, 100).length == 0,
+                "Acknowledged packet is not reported as timed out");
+
+      System.out.println("Initial tests completed.");
     }
 }
