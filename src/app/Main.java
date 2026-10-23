@@ -1,18 +1,17 @@
 package app;
 
 import common.FileHasher;
-import network.UdpNetwork;
 import protocol.ProtocolConfig;
 import protocol.StopAndWait;
-import protocol.TransportProtocol;
 
+import java.net.InetAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
  * Usage:
- *   java app.Main recv <port> <outputDir>
- *   java app.Main send <host> <port> <file>     (host/port = channel emulator or receiver)
+ *   java app.Main recv <port> <destinationFile>
+ *   java app.Main send <host> <port> <sourceFile>   (host/port = channel emulator or receiver)
  *   java app.Main verify <sourceFile> <receivedFile>
  */
 public class Main {
@@ -21,25 +20,22 @@ public class Main {
         cfg.verbose = Boolean.getBoolean("verbose");
 
         if (a.length >= 3 && a[0].equals("recv")) {
-            try (UdpNetwork net = new UdpNetwork(Integer.parseInt(a[1]))) {
-                TransportProtocol proto = new StopAndWait(net, cfg);   // swap protocol here only
-                Path out = proto.receive(Paths.get(a[2]));
-                System.out.println("Received -> " + out + "\nSHA-256: " + FileHasher.sha256(out));
-                System.out.println(proto.getStats());
-            }
+            StopAndWait proto = new StopAndWait(cfg);
+            Path dest = Paths.get(a[2]);
+            proto.receiveFile(dest, Integer.parseInt(a[1]));
+            System.out.println("Received -> " + dest + "\nSHA-256: " + FileHasher.sha256(dest));
+            System.out.println(proto.getStats());
         } else if (a.length >= 4 && a[0].equals("send")) {
-            try (UdpNetwork net = new UdpNetwork(a[1], Integer.parseInt(a[2]))) {
-                TransportProtocol proto = new StopAndWait(net, cfg);
-                Path f = Paths.get(a[3]);
-                proto.send(f);
-                System.out.println("Sent " + f + "\nSHA-256: " + FileHasher.sha256(f));
-                System.out.println(proto.getStats());
-            }
+            StopAndWait proto = new StopAndWait(cfg);
+            Path src = Paths.get(a[3]);
+            proto.sendFile(src, InetAddress.getByName(a[1]), Integer.parseInt(a[2]));
+            System.out.println("Sent " + src + "\nSHA-256: " + FileHasher.sha256(src));
+            System.out.println(proto.getStats());
         } else if (a.length >= 3 && a[0].equals("verify")) {
             boolean ok = FileHasher.matches(Paths.get(a[1]), Paths.get(a[2]));
             System.out.println(ok ? "INTEGRITY OK (hashes match)" : "INTEGRITY FAILED (hashes differ)");
         } else {
-            System.out.println("Usage:\n  recv <port> <outDir>\n  send <host> <port> <file>\n  verify <src> <received>");
+            System.out.println("Usage:\n  recv <port> <destFile>\n  send <host> <port> <file>\n  verify <src> <received>");
         }
     }
 }
