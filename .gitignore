@@ -1,2 +1,3 @@
-*.classout/
+*.class
+out/
 sources.txt
