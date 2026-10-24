@@ -19,6 +19,7 @@ import java.util.TreeMap;
 /** Selective Repeat file receiver over UDP. */
 public class SelectiveRepeatReceiver {
     private static final int MAX_BUFFERED_PACKETS = 4096;
+    private static final int END_LINGER_TIMEOUT_MS = 5000;
     private final TransferStats stats = new TransferStats();
     public TransferStats getStats() { return stats; }
     private static Packet decode(byte[] bytes) { return PacketIntegrity.decode(bytes); }
@@ -91,13 +92,59 @@ public class SelectiveRepeatReceiver {
                 }
 
                 if (packet.getType() == PacketType.END) {
-                    if (base == expectedPackets && Files.exists(destinationFile) && Files.size(destinationFile) == expectedSize) {
-                        stats.endNanos = System.nanoTime();
-                        sendAck(socket, peerAddress, peerPort, packet.getSequenceNumber(), PacketConstants.FLAG_END);
-                        return;
-                    }
-                    // Do not acknowledge END until every expected byte is safely written.
+    if (base == expectedPackets
+            && Files.exists(destinationFile)
+            && Files.size(destinationFile) == expectedSize) {
+
+        stats.endNanos = System.nanoTime();
+        sendAck(
+                socket,
+                peerAddress,
+                peerPort,
+                packet.getSequenceNumber(),
+                PacketConstants.FLAG_END
+        );
+
+        long lingerDeadline = System.currentTimeMillis() + END_LINGER_TIMEOUT_MS;
+
+        while (System.currentTimeMillis() < lingerDeadline) {
+            try {
+                socket.setTimeout((int) Math.max(
+                        1,
+                        lingerDeadline - System.currentTimeMillis()
+                ));
+
+                ReceivedDatagram duplicate = socket.receive();
+
+                if (!duplicate.getSenderAddress().equals(peerAddress)
+        || duplicate.getSenderPort() != peerPort) {
+                    continue;
                 }
+
+                Packet repeatedEnd = decode(duplicate.getData());
+
+                if (repeatedEnd != null
+        && repeatedEnd.getType() == PacketType.END
+        && repeatedEnd.getFlags() == PacketConstants.FLAG_END
+        && repeatedEnd.getSequenceNumber() == packet.getSequenceNumber()) {
+                    sendAck(
+                            socket,
+                            peerAddress,
+                            peerPort,
+                            repeatedEnd.getSequenceNumber(),
+                            PacketConstants.FLAG_END
+                    );
+                }
+            } catch (java.net.SocketTimeoutException timeout) {
+                break;
+            }
+        }
+
+        return;
+    }
+
+    // Do not acknowledge END until every expected byte is safely written.
+}
             }
         } 
     }
