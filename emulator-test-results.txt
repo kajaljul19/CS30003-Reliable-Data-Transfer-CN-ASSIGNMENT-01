@@ -7,7 +7,7 @@ Result: Transfer succeeded
 Packets sent: 4
 Retransmissions: 1
 SHA-256 verification: PASS
-Note: Emulator drop event not yet confirmed from saved log.
+Note: Confirmed REPLY dropped (16 bytes) in emulator log; sender retransmitted once.
 
 Test 2: Packet Corruption
 Configuration: corruption=0.3, seed=42
