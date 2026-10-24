@@ -1,0 +1,10 @@
+Stop-and-Wait Emulator Integration Tests
+========================================
+Packet loss:       20% | SHA-256: PASS
+Packet corruption: 20% | SHA-256: PASS
+Delay:             300 ms | SHA-256: PASS
+
+Note:
+Integrity results were confirmed manually.
+Sender retransmission counts and emulator impairment logs
+were not captured in this report.
