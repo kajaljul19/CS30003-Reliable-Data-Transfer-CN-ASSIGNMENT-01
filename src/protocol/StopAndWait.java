@@ -1,8 +1,8 @@
 package protocol;
 
-import common.Checksum;
 import common.Packet;
 import common.PacketConstants;
+import common.PacketIntegrity;
 import common.PacketType;
 import transport.ReceivedDatagram;
 import transport.TransportProtocol;
@@ -29,9 +29,11 @@ import java.util.Arrays;
  */
 public class StopAndWait implements TransportProtocol {
     public static final int WINDOW_SIZE = 1;
+    /** Decision 12: ACK/DATA flag value meaning "no flag". Kept here so the shared PacketConstants stays untouched. */
+    private static final byte FLAG_NONE = 0;
 
     private final ProtocolConfig cfg;
-    private final RttEstimator rtt;
+    private final AdaptiveRto rto = new AdaptiveRto();      // team's shared adaptive RTO (Decision 13)
     private final TransferStats stats = new TransferStats();
 
     // per-transfer state
@@ -41,7 +43,6 @@ public class StopAndWait implements TransportProtocol {
 
     public StopAndWait(ProtocolConfig cfg) {
         this.cfg = cfg;
-        this.rtt = new RttEstimator(cfg);
     }
 
     /** Metrics of the last transfer (goodput, retransmissions, time) for the experiments. */
@@ -54,29 +55,19 @@ public class StopAndWait implements TransportProtocol {
         return new Packet(seq, ack, type, flags, data);
     }
 
-    /** Fill in the CRC-32: computed over the whole packet with the checksum field = 0. */
+    /** Serialize + CRC-32 using the team's shared common.PacketIntegrity (same wire format as Selective Repeat). */
     private static byte[] seal(Packet p) {
-        p.setChecksum(0);
-        p.setChecksum(Checksum.calculate(p.toBytes()));
-        return p.toBytes();
+        return PacketIntegrity.encode(p);
     }
 
     /** Parse + verify. Returns null if malformed or the CRC-32 does not match (corrupted). */
     private static Packet parse(ReceivedDatagram d) {
         if (d == null) return null;
-        try {
-            Packet p = Packet.fromBytes(d.getData());   // throws IllegalArgumentException if malformed
-            int received = p.getChecksum();
-            p.setChecksum(0);
-            int computed = Checksum.calculate(p.toBytes());
-            p.setChecksum(received);
-            if (computed != received) return null;
-            byte t = p.getType();
-            if (t < PacketType.DATA || t > PacketType.END) return null;
-            return p;
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
+        Packet p = PacketIntegrity.decode(d.getData());   // null if malformed or checksum mismatch
+        if (p == null) return null;
+        byte t = p.getType();
+        if (t < PacketType.DATA || t > PacketType.END) return null;
+        return p;
     }
 
     /** Wait up to timeoutMs for a datagram (0 = forever). Returns null on timeout. */
@@ -116,7 +107,7 @@ public class StopAndWait implements TransportProtocol {
 
             // 1. START (reliable) - metadata payload from Decision 6A
             byte[] meta = buildStartPayload(sourceFile.getFileName().toString(), size);
-            sendReliably(make(0, 0, PacketType.START, PacketConstants.FLAG_NONE, meta),
+            sendReliably(make(0, 0, PacketType.START, FLAG_NONE, meta),
                     PacketConstants.FLAG_START, 0);
 
             // 2. DATA, one packet at a time (Decision 9)
@@ -124,14 +115,14 @@ public class StopAndWait implements TransportProtocol {
                 byte[] buf = new byte[PacketConstants.MAX_PAYLOAD_SIZE];
                 int seq = 0, n;
                 while ((n = in.readNBytes(buf, 0, buf.length)) > 0) {
-                    sendReliably(make(seq, 0, PacketType.DATA, PacketConstants.FLAG_NONE, Arrays.copyOf(buf, n)),
-                            PacketConstants.FLAG_NONE, seq);
+                    sendReliably(make(seq, 0, PacketType.DATA, FLAG_NONE, Arrays.copyOf(buf, n)),
+                            FLAG_NONE, seq);
                     seq++;                                        // only DATA consumes sequence numbers
                 }
             }
 
             // 3. END (reliable, empty payload)
-            sendReliably(make(0, 0, PacketType.END, PacketConstants.FLAG_NONE, new byte[0]),
+            sendReliably(make(0, 0, PacketType.END, FLAG_NONE, new byte[0]),
                     PacketConstants.FLAG_END, 0);
             stats.endNanos = System.nanoTime();
         } finally {
@@ -141,7 +132,7 @@ public class StopAndWait implements TransportProtocol {
 
     /**
      * Send one packet and wait for its matching ACK, retransmitting on timeout.
-     * Adaptive RTO; Karn's algorithm: no RTT sample if the packet was retransmitted.
+     * Adaptive RTO (common AdaptiveRto); Karn's algorithm: no RTT sample if the packet was retransmitted.
      */
     private void sendReliably(Packet pkt, byte ackFlags, int ackNum) throws IOException {
         byte[] bytes = seal(pkt);
@@ -156,10 +147,10 @@ public class StopAndWait implements TransportProtocol {
             if (attempts > 0) stats.retransmissions++;
             boolean retransmitted = attempts > 0;
             attempts++;
-            log("TX " + describe(pkt) + (retransmitted ? " (retx)" : "") + "  RTO=" + (long) rtt.getRtoMs() + "ms");
+            log("TX " + describe(pkt) + (retransmitted ? " (retx)" : "") + "  RTO=" + rto.getRtoMillis() + "ms");
 
             long sentAt = System.nanoTime();
-            long deadline = sentAt + (long) (rtt.getRtoMs() * 1_000_000);
+            long deadline = sentAt + rto.getRtoMillis() * 1_000_000L;
 
             while (true) {
                 long remainingMs = (deadline - System.nanoTime()) / 1_000_000;
@@ -171,20 +162,19 @@ public class StopAndWait implements TransportProtocol {
                 if (ack == null) { stats.corruptedDropped++; continue; } // corrupted -> ignore
 
                 if (isMatchingAck(ack, ackFlags, ackNum)) {
-                    if (!retransmitted)                                  // Karn's algorithm
-                        rtt.addSample((System.nanoTime() - sentAt) / 1e6);
+                    // Karn's algorithm: AdaptiveRto ignores the sample if the packet was retransmitted
+                    rto.recordRttSample((System.nanoTime() - sentAt) / 1e6, retransmitted);
                     log("RX " + describe(ack));
                     return;
                 }
                 // stale / duplicate ACK -> ignore and keep waiting
             }
-            rtt.backoff();                                               // timeout -> retransmit
         }
     }
 
     private static boolean isMatchingAck(Packet p, byte flags, int ackNum) {
         if (p.getType() != PacketType.ACK || p.getFlags() != flags) return false;
-        return flags != PacketConstants.FLAG_NONE || p.getAckNumber() == ackNum;
+        return flags != FLAG_NONE || p.getAckNumber() == ackNum;
     }
 
     /** Decision 6A: 2-byte filename length + filename bytes + 8-byte file size. */
@@ -257,10 +247,10 @@ public class StopAndWait implements TransportProtocol {
                             if (p.getSequenceNumber() == expected) {  // new in-order packet
                                 out.write(p.getData());
                                 written += p.getData().length;
-                                sendAck(p.getSequenceNumber(), PacketConstants.FLAG_NONE);
+                                sendAck(p.getSequenceNumber(), FLAG_NONE);
                                 expected++;
                             } else if (p.getSequenceNumber() < expected) {   // duplicate -> our ACK was lost
-                                sendAck(p.getSequenceNumber(), PacketConstants.FLAG_NONE);
+                                sendAck(p.getSequenceNumber(), FLAG_NONE);
                             }                                         // seq > expected impossible in S&W: ignore
                             break;
 
