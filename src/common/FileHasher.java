@@ -7,7 +7,7 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-/** Decision 10 - SHA-256 for final file-integrity verification. */
+/* Decision 10 - SHA-256 for final file-integrity verification. */
 public final class FileHasher {
     private FileHasher() {}
 
@@ -16,9 +16,15 @@ public final class FileHasher {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             byte[] buf = new byte[8192];
             int n;
-            while ((n = in.read(buf)) > 0) md.update(buf, 0, n);
+
+            while ((n = in.read(buf)) > 0) {
+                md.update(buf, 0, n);
+            }
+
             StringBuilder sb = new StringBuilder();
-            for (byte b : md.digest()) sb.append(String.format("%02x", b));
+            for (byte b : md.digest()) {
+                sb.append(String.format("%02x", b));
+            }
             return sb.toString();
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
