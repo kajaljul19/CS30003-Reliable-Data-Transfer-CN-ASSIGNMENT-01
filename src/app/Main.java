@@ -6,12 +6,30 @@ import protocol.ProtocolConfig;
 import protocol.StopAndWait;
 import protocol.GoBackN;
 import transport.TransportProtocol;
+import transport.SelectiveRepeatSender;
+import transport.SelectiveRepeatReceiver;
+import protocol.TransferStats;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class Main {
+    private static void printStats(TransferStats stats) {
+    System.out.println("Transfer time: "
+            + String.format("%.3f", stats.seconds()) + " seconds");
+
+    System.out.println("Goodput: "
+            + String.format("%.2f",
+                    stats.goodputBytesPerSec() / 1024.0)
+            + " KB/s");
+
+    System.out.println("Packets sent: " + stats.packetsSent);
+    System.out.println("Retransmissions: " + stats.retransmissions);
+    System.out.println("Corrupted packets dropped: "
+            + stats.corruptedDropped);
+}
     private static TransportProtocol createProtocol(
             ProtocolConfig cfg, String name) {
         if ("gbn".equalsIgnoreCase(name)) {
@@ -20,14 +38,40 @@ public class Main {
         if ("saw".equalsIgnoreCase(name)) {
             return new StopAndWait(cfg);
         }
+        if ("sr".equalsIgnoreCase(name)) {
+    return new TransportProtocol() {
+        @Override
+        public void sendFile(
+                Path sourceFile,
+                InetAddress receiverAddress,
+                int receiverPort
+        ) throws IOException {
+            try (SelectiveRepeatSender sender =
+                         new SelectiveRepeatSender(0, cfg.windowSize,new protocol.AdaptiveRto(cfg))) {
+                sender.sendFile(sourceFile, receiverAddress, receiverPort);
+                printStats(sender.getStats());
+            }
+        }
+
+        @Override
+        public void receiveFile(
+                Path destinationFile,
+                int localPort
+        ) throws IOException {
+            new SelectiveRepeatReceiver().receiveFile(destinationFile, localPort);
+        }
+    };
+}
         throw new IllegalArgumentException(
-                "Protocol must be 'saw' or 'gbn'");
+                "Protocol must be 'saw' or 'gbn'or 'sr'");
     }
 
     public static void main(String[] a) throws Exception {
         ProtocolConfig cfg = new ProtocolConfig();
-        cfg.verbose = Boolean.getBoolean("verbose");
-        cfg.windowSize = Integer.getInteger("window", cfg.windowSize);
+cfg.verbose = Boolean.getBoolean("verbose");
+cfg.windowSize = Integer.getInteger("window", cfg.windowSize);
+cfg.initialRtoMs = Double.parseDouble(
+        System.getProperty("initialRto", "500"));
 
         if (a.length >= 4 && a[0].equals("recv")) {
             TransportProtocol proto = createProtocol(cfg, a[3]);
@@ -42,6 +86,11 @@ public class Main {
             Path src = Paths.get(a[3]);
             proto.sendFile(src, InetAddress.getByName(a[1]),
                     Integer.parseInt(a[2]));
+                    if (proto instanceof StopAndWait) {
+    printStats(((StopAndWait) proto).getStats());
+} else if (proto instanceof GoBackN) {
+    printStats(((GoBackN) proto).getStats());
+}
             System.out.println("Sent " + src
                     + "\nSHA-256: " + FileHasher.sha256(src));
             System.out.println(proto);

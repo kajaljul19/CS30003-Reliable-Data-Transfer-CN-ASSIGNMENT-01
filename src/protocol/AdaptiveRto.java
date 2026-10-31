@@ -6,8 +6,8 @@ public class AdaptiveRto {
     private static final double ALPHA = 0.125;
     private static final double BETA = 0.25;
 
-    private static final double MIN_RTO_MS = 100.0;
-    private static final double MAX_RTO_MS = 60000.0;
+    private final double minRtoMs;
+    private final double maxRtoMs;
 
     private double smoothedRtt;
     private double rttVariation;
@@ -15,8 +15,29 @@ public class AdaptiveRto {
 
     private boolean initialized;
 
+    // Default settings, retained for existing code.
     public AdaptiveRto() {
-        this.rto = 1000.0;
+        this(1000.0, 100.0, 30000.0);
+    }
+
+    // Configurable settings from ProtocolConfig.
+    public AdaptiveRto(ProtocolConfig cfg) {
+        this(cfg.initialRtoMs, cfg.minRtoMs, cfg.maxRtoMs);
+    }
+
+    public AdaptiveRto(double initialRtoMs,
+                       double minRtoMs,
+                       double maxRtoMs) {
+
+        if (minRtoMs <= 0 || maxRtoMs < minRtoMs) {
+            throw new IllegalArgumentException("Invalid RTO limits");
+        }
+
+        this.minRtoMs = minRtoMs;
+        this.maxRtoMs = maxRtoMs;
+        this.rto = Math.max(minRtoMs,
+                Math.min(maxRtoMs, initialRtoMs));
+
         this.smoothedRtt = 0.0;
         this.rttVariation = 0.0;
         this.initialized = false;
@@ -46,8 +67,8 @@ public class AdaptiveRto {
 
         rto = smoothedRtt + 4.0 * rttVariation;
 
-        rto = Math.max(MIN_RTO_MS,
-                       Math.min(MAX_RTO_MS, rto));
+        rto = Math.max(minRtoMs,
+                       Math.min(maxRtoMs, rto));
     }
 
     public long getRtoMillis() {

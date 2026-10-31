@@ -22,20 +22,25 @@ import java.util.List;
 public class SelectiveRepeatSender implements AutoCloseable {
     private final UdpTransport transport;
     private final int windowSize;
-    private final AdaptiveRto rto = new AdaptiveRto();
+    private final AdaptiveRto rto;
     private final TransferStats stats = new TransferStats();
     public TransferStats getStats() { return stats; }
     private static final int MAX_RETRIES = 20;
 
     public SelectiveRepeatSender(int localPort) throws IOException {
-        this(localPort, 8);
-    }
+    this(localPort, 8, new AdaptiveRto());
+}
 
-    public SelectiveRepeatSender(int localPort, int windowSize) throws IOException {
-        if (windowSize <= 0) throw new IllegalArgumentException("Window size must be positive");
-        this.transport = new UdpTransport(localPort);
-        this.windowSize = windowSize;
-    }
+public SelectiveRepeatSender(int localPort, int windowSize) throws IOException {
+    this(localPort, windowSize, new AdaptiveRto());
+}
+
+public SelectiveRepeatSender(int localPort, int windowSize, AdaptiveRto rto) throws IOException {
+    if (windowSize <= 0) throw new IllegalArgumentException("Window size must be positive");
+    this.transport = new UdpTransport(localPort);
+    this.windowSize = windowSize;
+    this.rto = rto;
+}
 
     public void sendFile(Path sourceFile, InetAddress receiverAddress, int receiverPort) throws IOException {
         if (!Files.isRegularFile(sourceFile)) throw new IOException("Source file does not exist: " + sourceFile);

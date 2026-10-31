@@ -43,7 +43,7 @@ public class GoBackN implements TransportProtocol {
     private static final byte FLAG_NONE = 0;
 
     private final ProtocolConfig cfg;
-    private final AdaptiveRto rto = new AdaptiveRto();
+    private final AdaptiveRto rto;
     private final TransferStats stats = new TransferStats();
 
     // per-transfer state
@@ -52,9 +52,10 @@ public class GoBackN implements TransportProtocol {
     private int remotePort;
 
     public GoBackN(ProtocolConfig cfg) {
-        if (cfg.windowSize < 1) throw new IllegalArgumentException("windowSize must be >= 1");
-        this.cfg = cfg;
-    }
+    if (cfg.windowSize < 1) throw new IllegalArgumentException("windowSize must be >= 1");
+    this.cfg = cfg;
+    this.rto = new AdaptiveRto(cfg);
+}
 
     /** Metrics of the last transfer (goodput, retransmissions, time) for the experiments. */
     public TransferStats getStats() { return stats; }

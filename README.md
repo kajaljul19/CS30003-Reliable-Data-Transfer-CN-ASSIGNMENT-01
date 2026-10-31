@@ -1,30 +1,42 @@
-# CS30003 Coding Assignment 1: Reliable Data Transfer over UDP
+# 🚀 CS30003 Coding Assignment 1
+## Reliable Data Transfer over UDP
 
-## Project Overview
+---
 
-This project implements reliable file transfer over UDP using three transport protocols: Stop-and-Wait, Go-Back-N, and Selective Repeat. It also includes a channel emulator for testing protocol behaviour under different network conditions.
+### 📌 Project Overview
 
-The project demonstrates reliable data delivery over an unreliable network using acknowledgements, retransmissions, sequence numbers, sliding windows, and file-integrity verification.
+This project implements **reliable file transfer over UDP** using three transport protocols:
 
-## Team Members and Contributions
+- **Stop-and-Wait (SAW)**
+- **Go-Back-N (GBN)**
+- **Selective Repeat (SR)**
 
-- **Priya** — Selective Repeat protocol
-- **Preeti** — Stop-and-Wait protocol
-- **Anustika** — Go-Back-N protocol
-- **Sonakshi** — Channel emulator and testing support
+It also includes a **Channel Emulator** to test protocol behaviour under different network conditions.
 
-## Features
+The project demonstrates reliable data delivery over an unreliable network using **acknowledgements, retransmissions, sequence numbers, sliding windows, and file-integrity verification**.
 
-- Reliable file transfer over UDP
-- Stop-and-Wait, Go-Back-N, and Selective Repeat protocols
-- Packet sequence numbers and acknowledgements
-- Retransmission handling for packet loss
-- Channel emulation for testing network conditions
-- SHA-256 checksums for verifying file integrity
-- Configurable protocol parameters
+### 👥 Team Members and Contributions
 
-## Project Structure
+| Team Member | Contribution |
+|---|---|
+| **Priya** | Selective Repeat protocol |
+| **Priti** | Stop-and-Wait protocol |
+| **Anustika** | Go-Back-N protocol |
+| **Sonakshi** | Channel emulator and testing support |
 
+### ✨ Key Features
+
+- ✅ Reliable file transfer over UDP
+- ✅ Three transport protocols: **SAW, GBN, and SR**
+- ✅ Packet sequence numbers and acknowledgements
+- ✅ Retransmission handling for packet loss
+- ✅ Channel emulation under different network conditions
+- ✅ **SHA-256 checksums** for file-integrity verification
+- ✅ Configurable protocol parameters
+
+### 📂 Project Structure
+
+```text
 src/
 ├── app/
 ├── common/
@@ -32,32 +44,52 @@ src/
 ├── network/
 ├── protocol/
 └── transport/
+```
 
-## Requirements
+### ⚙️ Requirements
 
-- Java Development Kit (JDK)
+- **Java Development Kit (JDK)**
 - Terminal or command prompt
+- **Visual Studio Code** (recommended)
 
-## Compilation
+### 🔨 Compilation
 
-From the project root directory, run:
+Open a terminal in the project root directory and run:
 
-powershell
+```powershell
 javac -d out (Get-ChildItem -Recurse src -Filter *.java).FullName
+```
 
-## Running the Project
+### ▶️ Running the Project
 
-Run the application's main class using the command and protocol options documented in the source code or assignment instructions.
+Run the application's main class using the required command-line arguments and protocol options.
 
-Supported protocol implementations include Stop-and-Wait, Go-Back-N, and Selective Repeat. Check the application's command-line arguments before running a transfer.
+The supported protocol implementations are:
 
-## Testing
+- `saw` — Stop-and-Wait
+- `gbn` — Go-Back-N
+- `sr` — Selective Repeat
 
-The project includes test classes for protocol behaviour, packet integrity, adaptive retransmission timeout, and channel-emulator-based transfer testing.
+Refer to the assignment instructions and application command-line options for the complete execution procedure.
 
-File integrity can be checked by comparing the SHA-256 hashes of the original and received files.
+### 🧪 Testing and Verification
 
-## Repository
+The project includes tests covering:
 
-This repository contains the source code for CS30003 Coding Assignment 1 — Reliable Data Transfer over UDP.
+- **Adaptive RTO behaviour**
+- **Selective Repeat protocol**
+- **Packet checksum and integrity**
+- **End-to-end file transfer**
 
+File integrity is verified using **SHA-256 hash comparison** between the original and received files.
+
+### 📦 Repository Information
+
+This repository contains the source code, protocol implementations, channel emulator, tests, and experimental results for **CS30003 Coding Assignment 1 — Reliable Data Transfer over UDP**.
+
+---
+
+<p align="center">
+  <b>CS30003 | Computer Networks</b><br>
+  Reliable Data Transfer over UDP
+</p>

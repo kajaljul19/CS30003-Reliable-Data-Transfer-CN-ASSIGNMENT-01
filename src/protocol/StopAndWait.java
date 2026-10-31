@@ -33,7 +33,7 @@ public class StopAndWait implements TransportProtocol {
     private static final byte FLAG_NONE = 0;
 
     private final ProtocolConfig cfg;
-    private final AdaptiveRto rto = new AdaptiveRto();      // team's shared adaptive RTO (Decision 13)
+    private final AdaptiveRto rto;      // team's shared adaptive RTO (Decision 13)
     private final TransferStats stats = new TransferStats();
 
     // per-transfer state
@@ -42,8 +42,9 @@ public class StopAndWait implements TransportProtocol {
     private int remotePort;
 
     public StopAndWait(ProtocolConfig cfg) {
-        this.cfg = cfg;
-    }
+    this.cfg = cfg;
+    this.rto = new AdaptiveRto(cfg);
+}
 
     /** Metrics of the last transfer (goodput, retransmissions, time) for the experiments. */
     public TransferStats getStats() { return stats; }

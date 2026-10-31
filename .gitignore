@@ -1,3 +1,5 @@
 *.class
 out/
 sources.txt
+# Generated file-transfer outputs
+received-*.txt
