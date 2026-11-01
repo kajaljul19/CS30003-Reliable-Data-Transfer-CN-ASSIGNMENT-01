@@ -1,0 +1,37 @@
+GO-BACK-N — FILE TRANSFER
+
+Command:
+java -DinitialRto=500 -cp out app.Main send 127.0.0.1 5007 test-input.txt gbn
+
+Transfer time: 0.684 seconds
+Goodput: 0.06 KB/s
+Packets sent: 3
+Retransmissions: 0
+Corrupted packets dropped: 0
+Sent test-input.txt
+SHA-256: ef2af5f7b9bc7e736586587732ceee7e3a5e2fbf0c2b85b2eecb95831269b686
+
+Command:
+java -cp out app.Main verify test-input.txt received-gbn-rto1000.txt
+
+INTEGRITY OK (hashes match)
+
+
+GO-BACK-N — FILE TRANSFER (INITIAL RTO: 1000 ms)
+
+Command:
+java -DinitialRto=1000 -cp out app.Main send 127.0.0.1 4001 test-input.txt gbn
+
+Transfer time: 0.699 seconds
+Goodput: 0.06 KB/s
+Packets sent: 3
+Retransmissions: 0
+Corrupted packets dropped: 0
+Sent test-input.txt
+SHA-256: ef2af5f7b9bc7e736586587732ceee7e3a5e2fbf0c2b85b2eecb95831269b686
+
+Command:
+java -cp out app.Main recv 5007 received-gbn-rto1000.txt gbn
+
+Received -> received-gbn-rto1000.txt
+SHA-256: ef2af5f7b9bc7e736586587732ceee7e3a5e2fbf0c2b85b2eecb95831269b686

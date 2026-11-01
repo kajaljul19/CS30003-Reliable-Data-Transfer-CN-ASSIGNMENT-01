@@ -1,0 +1,26 @@
+STOP-AND-WAIT — FILE TRANSFER
+
+Command:
+java -DinitialRto=1000 -cp out app.Main send 127.0.0.1 4001 test-input.txt saw
+
+Transfer time: 0.713 seconds
+Goodput: 0.06 KB/s
+Packets sent: 3
+Retransmissions: 0
+Corrupted packets dropped: 0
+Sent test-input.txt
+SHA-256: ef2af5f7b9bc7e736586587732ceee7e3a5e2fbf0c2b85b2eecb95831269b686
+
+Command:
+java -cp out app.Main verify test-input.txt received-saw-rto1000.txt
+
+INTEGRITY OK (hashes match)
+
+
+STOP-AND-WAIT — RECEIVER
+
+Command:
+java -cp out app.Main recv 5007 received-saw-rto1000.txt saw
+
+Received -> received-saw-rto1000.txt
+SHA-256: ef2af5f7b9bc7e736586587732ceee7e3a5e2fbf0c2b85b2eecb95831269b686
