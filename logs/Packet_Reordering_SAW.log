@@ -1,0 +1,39 @@
+PACKET REORDERING — STOP-AND-WAIT
+
+CHANNEL EMULATOR
+Command:
+java -cp out emulator.ChannelEmulator 4250 4251 127.0.0.1 5092 127.0.0.1 4252 --seed=42 --loss=0.00 --reordering=0.40 --reorder-delay-ms=200
+
+Channel emulator started.
+Sender-facing port: 4250
+Receiver-facing port: 4251
+Receiver: /127.0.0.1:5092
+Configured sender fallback: /127.0.0.1:4252
+Impairments: loss=0.00 duplication=0.00 corruption=0.00 reordering=0.40 delay=0ms jitter=0ms reorderDelay=200ms seed=42
+Single active sender is supported.
+DATA selected for reordering
+DATA forwarded: 40 bytes after 200ms
+REPLY forwarded: 16 bytes after 0ms
+DATA selected for reordering
+DATA forwarded: 59 bytes after 200ms
+REPLY forwarded: 16 bytes after 0ms
+DATA forwarded: 16 bytes after 0ms
+REPLY forwarded: 16 bytes after 0ms
+
+SENDER
+Command:
+java -cp out app.Main send 127.0.0.1 4250 test-input.txt saw
+
+Transfer time: 0.460 seconds
+Goodput: 0.09 KB/s
+Packets sent: 3
+Retransmissions: 0
+Corrupted packets dropped: 0
+Sent test-input.txt
+SHA-256: ef2af5f7b9bc7e736586587732ceee7e3a5e2fbf0c2b85b2eecb95831269b686
+Protocol: protocol.StopAndWait@5ccd43c2
+
+VERIFY
+Command:
+java -cp out app.Main verify test-input.txt received-saw-reorder40.txt
+INTEGRITY OK (hashes match)
