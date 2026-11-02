@@ -1,0 +1,39 @@
+PACKET LOSS — SELECTIVE REPEAT
+
+CHANNEL EMULATOR
+Command:
+java -cp out emulator.ChannelEmulator 4130 4131 127.0.0.1 5057 127.0.0.1 4132 --seed=42 --loss=0.40
+
+Channel emulator started.
+Sender-facing port: 4130
+Receiver-facing port: 4131
+Receiver: /127.0.0.1:5057
+Configured sender fallback: /127.0.0.1:4132
+Impairments: loss=0.40 duplication=0.00 corruption=0.00 reordering=0.00 delay=0ms jitter=0ms reorderDelay=100ms seed=42
+Single active sender is supported.
+DATA forwarded: 40 bytes after 0ms
+REPLY dropped (16 bytes)
+DATA forwarded: 40 bytes after 0ms
+REPLY forwarded: 16 bytes after 0ms
+DATA forwarded: 59 bytes after 0ms
+REPLY forwarded: 16 bytes after 0ms
+DATA forwarded: 16 bytes after 0ms
+REPLY forwarded: 16 bytes after 0ms
+
+SENDER
+Command:
+java -cp out app.Main send 127.0.0.1 4130 test-input.txt sr
+
+Transfer time: 1.035 seconds
+Goodput: 0.04 KB/s
+Packets sent: 4
+Retransmissions: 1
+Corrupted packets dropped: 0
+Sent test-input.txt
+SHA-256: ef2af5f7b9bc7e736586587732ceee7e3a5e2fbf0c2b85b2eecb95831269b686
+Protocol: app.Main$1@...
+
+VERIFY
+Command:
+java -cp out app.Main verify test-input.txt received-sr-loss40.txt
+INTEGRITY OK (hashes match)
