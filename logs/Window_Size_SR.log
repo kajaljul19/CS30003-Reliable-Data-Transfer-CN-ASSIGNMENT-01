@@ -1,0 +1,39 @@
+WINDOW SIZE EXPERIMENT — SELECTIVE REPEAT
+
+Configured window size: 4 packets
+
+CHANNEL EMULATOR
+Command:
+java -cp out emulator.ChannelEmulator 4180 4181 127.0.0.1 5071 127.0.0.1 4182 --seed=42 --loss=0.00
+
+Channel emulator started.
+Sender-facing port: 4180
+Receiver-facing port: 4181
+Receiver: /127.0.0.1:5071
+Configured sender fallback: /127.0.0.1:4182
+Impairments: loss=0.00 duplication=0.00 corruption=0.00 reordering=0.00 delay=0ms jitter=0ms reorderDelay=100ms seed=42
+Single active sender is supported.
+DATA forwarded: 40 bytes after 0ms
+REPLY forwarded: 16 bytes after 0ms
+DATA forwarded: 59 bytes after 0ms
+REPLY forwarded: 16 bytes after 0ms
+DATA forwarded: 16 bytes after 0ms
+REPLY forwarded: 16 bytes after 0ms
+
+SENDER
+Command:
+java -Dwindow=4 -cp out app.Main send 127.0.0.1 4180 test-input.txt sr
+
+Transfer time: 0.027 seconds
+Goodput: 1.55 KB/s
+Packets sent: 3
+Retransmissions: 0
+Corrupted packets dropped: 0
+Sent test-input.txt
+SHA-256: ef2af5f7b9bc7e736586587732ceee7e3a5e2fbf0c2b85b2eecb95831269b686
+Protocol: app.Main$1@5e99193f
+
+VERIFY
+Command:
+java -cp out app.Main verify test-input.txt received-sr-window4.txt
+INTEGRITY OK (hashes match)
