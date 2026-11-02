@@ -1,0 +1,25 @@
+BASIC FILE TRANSFER SUMMARY (from supplied screenshots)
+======================================================
+
+Protocol       Transfer time    Goodput    Packets    Retransmissions    Corrupt drops    Integrity
+SAW            0.070 s          0.60 KB/s  3          0                  0                PASS
+GBN            0.070 s          0.60 KB/s  3          0                  0                PASS
+SR             0.032 s          1.30 KB/s  3          0                  0                PASS
+
+Input file: test-input.txt
+Receiver output files:
+- received-rto-saw.txt
+- received-rto-gbn.txt
+- received-rto-sr.txt
+
+All three verification commands displayed:
+INTEGRITY OK (hashes match)
+
+SHA-256 displayed in the screenshots:
+ef2af5f7b9bc7e736586587732cee7e3a5e2fbf0c2b85b2eecb95831269b686
+
+Interpretation:
+This is a clean-channel baseline run: all emulator impairment probabilities
+were 0 and delay/jitter were 0 ms. Therefore, no retransmissions were needed.
+The SR run was fastest in this particular small-file run, but this single
+measurement does not establish that SR is always faster.

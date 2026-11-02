@@ -1,0 +1,7 @@
+[TRANSCRIBED FROM USER SCREENSHOT]
+Command:
+java -cp out app.Main recv 5017 received-rto-gbn.txt gbn
+
+Received -> received-rto-gbn.txt
+SHA-256: ef2af5f7b9bc7e736586587732cee7e3a5e2fbf0c2b85b2eecb95831269b686
+protocol.GoBackN@782830e

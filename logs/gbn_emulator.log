@@ -1,0 +1,17 @@
+[TRANSCRIBED FROM USER SCREENSHOT]
+Command:
+java -cp out emulator.ChannelEmulator 4011 4012 127.0.0.1 5017 127.0.0.1 4014 --seed=42
+
+Channel emulator started.
+Sender-facing port: 4011
+Receiver-facing port: 4012
+Receiver: /127.0.0.1:5017
+Configured sender fallback: /127.0.0.1:4014
+Impairments: loss=0.00 duplication=0.00 corruption=0.00 reordering=0.00 delay=0ms jitter=0ms reorderDelay=100ms seed=42
+Single active sender is supported.
+DATA forwarded: 40 bytes after 0ms
+REPLY forwarded: 16 bytes after 0ms
+DATA forwarded: 59 bytes after 0ms
+REPLY forwarded: 16 bytes after 0ms
+DATA forwarded: 16 bytes after 0ms
+REPLY forwarded: 16 bytes after 0ms

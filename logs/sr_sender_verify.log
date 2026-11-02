@@ -1,0 +1,16 @@
+[TRANSCRIBED FROM USER SCREENSHOT]
+Command:
+java -cp out app.Main send 127.0.0.1 4021 test-input.txt sr
+
+Transfer time: 0.032 seconds
+Goodput: 1.30 KB/s
+Packets sent: 3
+Retransmissions: 0
+Corrupted packets dropped: 0
+Sent test-input.txt
+SHA-256: ef2af5f7b9bc7e736586587732cee7e3a5e2fbf0c2b85b2eecb95831269b686
+
+Verification command:
+java -cp out app.Main verify test-input.txt received-rto-sr.txt
+
+INTEGRITY OK (hashes match)
